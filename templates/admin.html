@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Админ панел</title>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial;
+            display: flex;
+        }
+
+        /* 🧭 SIDEBAR */
+        .sidebar {
+            width: 220px;
+            height: 100vh;
+            background: #2c3e50;
+            color: white;
+            padding: 20px;
+        }
+
+        .sidebar h2 {
+            margin-bottom: 20px;
+        }
+
+        .sidebar a {
+            display: block;
+            color: white;
+            text-decoration: none;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 6px;
+        }
+
+        .sidebar a:hover {
+            background: #34495e;
+        }
+
+        /* 📄 CONTENT */
+        .content {
+            flex: 1;
+            padding: 20px;
+            background: #f4f6f9;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+
+        th, td {
+            padding: 10px;
+            border: 1px solid #ddd;
+            text-align: center;
+        }
+
+        th {
+            background: #007bff;
+            color: white;
+        }
+
+        .btn {
+            padding: 5px 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .ready {
+            background: green;
+            color: white;
+        }
+
+        .cooking {
+            background: orange;
+            color: white;
+        }
+
+        .logout {
+            background: red;
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+
+<!-- 🧭 SIDEBAR -->
+<div class="sidebar">
+    <h2>🍽️ Admin</h2>
+
+    <a href="/admin">📊 Заказҳо</a>
+    <a href="/menu_manage">🍽️ Меню</a>
+    <a href="/report">📊 Ҳисобот</a>
+    <a href="/admin_logout">🚪 Logout</a>
+</div>
+
+<!-- 📄 CONTENT -->
+<div class="content">
+
+    <h1>📊 Заказҳо</h1>
+
+    <!-- FILTER -->
+    <form method="get">
+        <select name="table">
+            <option value="">Ҳама</option>
+            <option>Table 1</option>
+            <option>Table 2</option>
+            <option>Table 3</option>
+        </select>
+
+        <button class="btn">Фильтр</button>
+    </form>
+
+    <br>
+
+    <!-- TABLE -->
+    <table>
+        <tr>
+            <th>ID</th>
+            <th>Хӯрок</th>
+            <th>Кол</th>
+            <th>Порция</th>
+            <th>Официант</th>
+            <th>Миз</th>
+            <th>Статус</th>
+            <th>Амал</th>
+        </tr>
+
+        {% for o in orders %}
+        <tr>
+            <td>{{ o[0] }}</td>
+            <td>{{ o[1] }}</td>
+            <td>{{ o[2] }}</td>
+            <td>{{ o[3] }}</td>
+            <td>{{ o[4] }}</td>
+            <td>{{ o[5] }}</td>
+
+            <td>
+                {% if o[6] == "готовится" %}
+                    🟡
+                {% else %}
+                    🟢
+                {% endif %}
+            </td>
+
+            <td>
+                <a href="/update_status/{{ o[0] }}/готовится">
+                    <button class="btn cooking">🟡</button>
+                </a>
+
+                <a href="/update_status/{{ o[0] }}/готово">
+                    <button class="btn ready">🟢</button>
+                </a>
+
+                <a href="/receipt/{{ o[0] }}">
+                    <button class="btn">🧾</button>
+                </a>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+
+</div>
+
+</body>
+</html>

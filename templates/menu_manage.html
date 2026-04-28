@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Меню менеджер</title>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial;
+            display: flex;
+        }
+
+        /* 🧭 SIDEBAR */
+        .sidebar {
+            width: 220px;
+            height: 100vh;
+            background: #2c3e50;
+            color: white;
+            padding: 20px;
+        }
+
+        .sidebar h2 {
+            margin-bottom: 20px;
+        }
+
+        .sidebar a {
+            display: block;
+            color: white;
+            text-decoration: none;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 6px;
+        }
+
+        .sidebar a:hover {
+            background: #34495e;
+        }
+
+        /* 📄 CONTENT */
+        .content {
+            flex: 1;
+            padding: 20px;
+            background: #f4f6f9;
+        }
+
+        h1 {
+            margin-bottom: 15px;
+        }
+
+        /* ➕ FORM */
+        .form-box {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+        }
+
+        button {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .add-btn {
+            background: green;
+            color: white;
+        }
+
+        .delete {
+            background: red;
+            color: white;
+        }
+
+        .edit {
+            background: orange;
+            color: white;
+        }
+
+        /* 📋 TABLE */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+
+        th, td {
+            padding: 10px;
+            border: 1px solid #ddd;
+            text-align: center;
+        }
+
+        th {
+            background: #007bff;
+            color: white;
+        }
+
+    </style>
+</head>
+
+<body>
+
+<!-- 🧭 SIDEBAR -->
+<div class="sidebar">
+    <h2>🍽️ Admin</h2>
+
+    <a href="/admin">📊 Заказҳо</a>
+    <a href="/menu_manage">🍽️ Меню</a>
+    <a href="/report">📊 Ҳисобот</a>
+    <a href="/admin_logout">🚪 Logout</a>
+</div>
+
+<!-- 📄 CONTENT -->
+<div class="content">
+
+    <h1>🍽️ Идоракунии меню</h1>
+
+    <!-- ➕ ADD FORM -->
+    <div class="form-box">
+        <h3>➕ Иловаи хӯрок</h3>
+
+        <form method="post">
+            <input name="name" placeholder="Номи хӯрок">
+            <input name="price" placeholder="Нарх">
+
+            <select name="category">
+                <option>Первое блюдо</option>
+                <option>Второе блюдо</option>
+                <option>Салаты</option>
+                <option>Десерты</option>
+                <option>Напитки</option>
+            </select>
+
+            <button class="add-btn">➕ Илова</button>
+        </form>
+    </div>
+
+    <!-- 📋 TABLE -->
+    <table>
+        <tr>
+            <th>ID</th>
+            <th>Ном</th>
+            <th>Нарх</th>
+            <th>Категория</th>
+            <th>Амал</th>
+        </tr>
+
+        {% for i in items %}
+        <tr>
+            <td>{{ i[0] }}</td>
+            <td>{{ i[1] }}</td>
+            <td>{{ i[2] }}</td>
+            <td>{{ i[3] }}</td>
+
+            <td>
+                <a href="/edit_item/{{ i[0] }}">
+                    <button class="edit">✏️</button>
+                </a>
+
+                <a href="/delete_item/{{ i[0] }}">
+                    <button class="delete">❌</button>
+                </a>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+
+</div>
+
+</body>
+</html>

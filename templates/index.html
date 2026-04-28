@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Анситу</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<!-- 🔵 HEADER -->
+<div class="header">
+    <h1>🍽️ Меню</h1>
+
+    <div class="top-info">
+        <div>👨‍🍳 {{ waiter }}</div>
+        <div>🪑 {{ table }}</div>
+
+        <div class="btn-group">
+            <a href="/change_waiter"><button>🔄 Официант</button></a>
+            <a href="/change_table"><button>🪑 Миз</button></a>
+            <a href="/admin"><button>📊 Админ</button></a>
+        </div>
+    </div>
+</div>
+
+<!-- 📦 STATUS -->
+<div class="status-box">
+    <h3>📦 Статус</h3>
+
+    {% for s in statuses %}
+    <p>
+        {{ s[0] }} →
+        {% if s[1] == "готовится" %}
+            🟡
+        {% else %}
+            🟢
+        {% endif %}
+    </p>
+    {% endfor %}
+</div>
+
+<!-- 🍽️ MENU -->
+<div class="grid">
+
+{% for category, items in menu.items() %}
+<div class="category">
+
+    <h3>{{ category }}</h3>
+
+    <form action="/order" method="post">
+
+        <!-- 🍽️ Хӯрок -->
+        <label>Хӯрок</label>
+        <select name="item_id">
+            {% for item in items %}
+            <option value="{{item[0]}}">
+                {{item[1]}} — {{item[2]}} смн
+            </option>
+            {% endfor %}
+        </select>
+
+        <!-- ⚖️ Порция -->
+        <label>Порция</label>
+        <select name="portion">
+            <option value="0.5">0.5 порция</option>
+            <option value="1" selected>1 порция</option>
+            <option value="2">2 порция</option>
+        </select>
+
+        <!-- 🔢 Количество -->
+        <label>Количество</label>
+        <input type="number" name="quantity" value="1" min="1">
+
+        <button class="add-btn">➕ Илова</button>
+
+    </form>
+
+</div>
+{% endfor %}
+
+</div>
+
+<!-- 🛒 CART -->
+<div class="cart">
+    <h2>🛒 Сабад</h2>
+
+    {% if cart %}
+        {% for item in cart %}
+            <p>{{item.name}} × {{item.quantity}} = {{item.total}}</p>
+        {% endfor %}
+
+        <h3>💰 {{ total_sum }}</h3>
+
+        <a href="/checkout">
+            <button class="checkout-btn">🧾 Оформить</button>
+        </a>
+
+        <a href="/clear">
+            <button class="clear-btn">🗑 Тоза</button>
+        </a>
+
+    {% else %}
+        <p>Сабад холӣ</p>
+    {% endif %}
+</div>
+
+</body>
+</html>
