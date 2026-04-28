@@ -1,13 +1,16 @@
 from flask import Flask, render_template, request, redirect, session
 import sqlite3
+import os
 
 app = Flask(__name__)
-app.secret_key = "secret123"
+
+# 🔐 безопасный ключ
+app.secret_key = os.environ.get("SECRET_KEY", "dev_key")
 
 
 # 🔗 DB
 def connect():
-    return sqlite3.connect("database.db")
+    return sqlite3.connect(os.path.join(os.getcwd(), "database.db"))
 
 
 # 🧱 TABLES
@@ -91,11 +94,13 @@ def change_waiter():
     session.pop("waiter", None)
     return redirect("/waiter")
 
+
 @app.route("/change_table")
 def change_table():
     session.pop("table", None)
     session.pop("cart", None)
     return redirect("/table")
+
 
 # 🌐 MAIN PAGE
 @app.route("/")
@@ -111,7 +116,6 @@ def index():
 
     items = cursor.execute("SELECT * FROM menu").fetchall()
 
-    # 📦 статусҳо барои официант
     cursor.execute("""
     SELECT menu.name, order_items.status
     FROM order_items
@@ -121,7 +125,6 @@ def index():
     """, (session["table"],))
 
     statuses = cursor.fetchall()
-
     conn.close()
 
     menu = {}
@@ -141,6 +144,8 @@ def index():
         statuses=statuses
     )
 
+
+# 📋 MENU ADMIN
 @app.route("/menu_manage", methods=["GET", "POST"])
 def menu_manage():
     if "admin" not in session:
@@ -149,35 +154,29 @@ def menu_manage():
     conn = connect()
     cursor = conn.cursor()
 
-    # ➕ илова
     if request.method == "POST":
-        name = request.form["name"]
-        price = request.form["price"]
-        category = request.form["category"]
-
         cursor.execute(
             "INSERT INTO menu (name, price, category) VALUES (?, ?, ?)",
-            (name, price, category)
+            (request.form["name"], request.form["price"], request.form["category"])
         )
         conn.commit()
 
-    # 📋 гирифтани меню
     items = cursor.execute("SELECT * FROM menu").fetchall()
-
     conn.close()
 
     return render_template("menu_manage.html", items=items)
 
-# 🛒 Нест кардани хурок аз меню
+
 @app.route("/delete_item/<int:id>")
 def delete_item(id):
     conn = connect()
     conn.execute("DELETE FROM menu WHERE id=?", (id,))
     conn.commit()
     conn.close()
-
     return redirect("/menu_manage")
 
+
+# 📊 REPORT
 @app.route("/report")
 def report():
     if "admin" not in session:
@@ -187,9 +186,8 @@ def report():
     cursor = conn.cursor()
 
     cursor.execute("""
-    SELECT 
-        order_items.waiter,
-        SUM(menu.price * order_items.quantity * order_items.portion) as total
+    SELECT order_items.waiter,
+           SUM(menu.price * order_items.quantity * order_items.portion)
     FROM order_items
     JOIN menu ON menu.id = order_items.menu_id
     GROUP BY order_items.waiter
@@ -198,27 +196,25 @@ def report():
     data = cursor.fetchall()
     conn.close()
 
-    # ҳисоб 10%
     report_data = []
     for waiter, total in data:
-        percent = round(total * 0.10, 2)   # 👈 ИН ҶО МУҲИМ
+        percent = round(total * 0.10, 2)
         total = round(total, 2)
-
         report_data.append((waiter, total, percent))
 
-# ИВАЗИ НАРХ (UPDATE)
+    return render_template("report.html", data=report_data)
+
+
+# ✏️ EDIT
 @app.route("/edit_item/<int:id>", methods=["GET", "POST"])
 def edit_item(id):
     conn = connect()
     cursor = conn.cursor()
 
     if request.method == "POST":
-        name = request.form["name"]
-        price = request.form["price"]
-
         cursor.execute(
             "UPDATE menu SET name=?, price=? WHERE id=?",
-            (name, price, id)
+            (request.form["name"], request.form["price"], id)
         )
         conn.commit()
         return redirect("/menu_manage")
@@ -227,6 +223,7 @@ def edit_item(id):
     conn.close()
 
     return render_template("edit_item.html", item=item)
+
 
 # 🛒 ADD TO CART
 @app.route("/order", methods=["POST"])
@@ -243,10 +240,7 @@ def order():
 
     total = price * quantity * portion
 
-    if "cart" not in session:
-        session["cart"] = []
-
-    session["cart"].append({
+    session.setdefault("cart", []).append({
         "name": name,
         "quantity": quantity,
         "portion": portion,
@@ -254,7 +248,6 @@ def order():
     })
 
     session.modified = True
-
     return redirect("/")
 
 
@@ -264,9 +257,6 @@ def checkout():
     if "cart" not in session or len(session["cart"]) == 0:
         return redirect("/")
 
-    waiter = session.get("waiter", "Unknown")
-    table = session.get("table", "Unknown")
-
     conn = connect()
     cursor = conn.cursor()
 
@@ -275,17 +265,15 @@ def checkout():
         result = cursor.fetchone()
 
         if result:
-            menu_id = result[0]
-
             cursor.execute("""
             INSERT INTO order_items (menu_id, quantity, portion, waiter, table_no, status)
             VALUES (?, ?, ?, ?, ?, ?)
             """, (
-                menu_id,
+                result[0],
                 item["quantity"],
                 item["portion"],
-                waiter,
-                table,
+                session.get("waiter"),
+                session.get("table"),
                 "готовится"
             ))
 
@@ -293,28 +281,20 @@ def checkout():
     conn.close()
 
     session.pop("cart", None)
-
     return redirect("/")
 
 
-# 🔄 UPDATE STATUS
+# 🔄 STATUS
 @app.route("/update_status/<int:order_id>/<status>")
 def update_status(order_id, status):
     conn = connect()
-    cursor = conn.cursor()
-
-    cursor.execute(
-        "UPDATE order_items SET status=? WHERE id=?",
-        (status, order_id)
-    )
-
+    conn.execute("UPDATE order_items SET status=? WHERE id=?", (status, order_id))
     conn.commit()
     conn.close()
-
     return redirect("/admin")
 
 
-# 📊 ADMIN LOGIN
+# 🔐 ADMIN LOGIN
 @app.route("/admin_login", methods=["GET", "POST"])
 def admin_login():
     if request.method == "POST":
@@ -325,7 +305,6 @@ def admin_login():
     return render_template("admin_login.html")
 
 
-# 🚪 LOGOUT
 @app.route("/admin_logout")
 def admin_logout():
     session.pop("admin", None)
@@ -338,44 +317,19 @@ def admin():
     if "admin" not in session:
         return redirect("/admin_login")
 
-    table_filter = request.args.get("table")
-
     conn = connect()
     cursor = conn.cursor()
 
-    if table_filter:
-        cursor.execute("""
-        SELECT 
-            order_items.id,
-            menu.name,
-            order_items.quantity,
-            order_items.portion,
-            order_items.waiter,
-            order_items.table_no,
-            order_items.status
-        FROM order_items
-        JOIN menu ON menu.id = order_items.menu_id
-        WHERE order_items.table_no=?
-        ORDER BY order_items.id DESC
-        """, (table_filter,))
-    else:
-        cursor.execute("""
-        SELECT 
-            order_items.id,
-            menu.name,
-            order_items.quantity,
-            order_items.portion,
-            order_items.waiter,
-            order_items.table_no,
-            order_items.status
-        FROM order_items
-        JOIN menu ON menu.id = order_items.menu_id
-        ORDER BY order_items.id DESC
-        """)
+    orders = cursor.execute("""
+    SELECT order_items.id, menu.name, order_items.quantity,
+           order_items.portion, order_items.waiter,
+           order_items.table_no, order_items.status
+    FROM order_items
+    JOIN menu ON menu.id = order_items.menu_id
+    ORDER BY order_items.id DESC
+    """).fetchall()
 
-    orders = cursor.fetchall()
     conn.close()
-
     return render_template("admin.html", orders=orders)
 
 
@@ -386,12 +340,8 @@ def receipt(order_id):
     cursor = conn.cursor()
 
     cursor.execute("""
-    SELECT 
-        menu.name,
-        order_items.quantity,
-        order_items.portion,
-        order_items.waiter,
-        order_items.table_no
+    SELECT menu.name, order_items.quantity, order_items.portion,
+           order_items.waiter, order_items.table_no
     FROM order_items
     JOIN menu ON menu.id = order_items.menu_id
     WHERE order_items.id=?
@@ -416,4 +366,4 @@ seed_data()
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run()
